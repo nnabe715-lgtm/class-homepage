@@ -301,8 +301,7 @@ body {
     font-weight: 900;
 }
 .modal-content input,
-.modal-content textarea,
-.modal-content select {
+.modal-content textarea {
     width: 100%;
     padding: 15px;
     font-size: 1.2rem;
@@ -331,22 +330,6 @@ body {
 }
 .btn-confirm { background: linear-gradient(135deg, #66BB6A 0%, #4CAF50 100%); }
 .btn-cancel { background: linear-gradient(135deg, #BDBDBD 0%, #9E9E9E 100%); }
-.btn-google {
-    background: white;
-    color: #333;
-    border: 3px solid #4285f4;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 15px;
-    border-radius: 15px;
-    cursor: pointer;
-    font-size: 1.2rem;
-    font-weight: 900;
-    margin-top: 15px;
-    width: 100%;
-}
 .hidden { display: none !important; }
 @media (max-width: 768px) {
     .header h1 { font-size: 2rem; }
@@ -365,7 +348,7 @@ body {
 <div class="top-bar">
 <div class="top-left">
 <div class="btn-login" onclick="openLoginModal()">👑 선생님 로그인</div>
-<div class="btn-signup" onclick="openSignupModal()">🌱 학생·학부모 회원가입</div>
+<div class="btn-signup" onclick="signInWithGoogle()">🌱 구글로 로그인</div>
 </div>
 <div id="userWelcome" class="hidden">
 <span class="user-info"><span id="currentUserName"></span> 님 🌿</span>
@@ -389,7 +372,7 @@ body {
 <p>🏫 <strong>학급명:</strong> 6학년 3반</p>
 <p>👨‍🏫 <strong>담임 선생님:</strong> 나나베 선생님</p>
 <p>📞 <strong>연락처:</strong> 010-1234-5678</p>
-<p>📧 <strong>이메일:</strong> <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="791717181b1c390a1a11161615571a1614">[email&#160;protected]</a></p>
+<p>📧 <strong>이메일:</strong> nnabe@school.com</p>
 </div>
 </div>
 
@@ -476,38 +459,6 @@ body {
 </div>
 </div>
 
-<div class="modal" id="signupModal">
-<div class="modal-content">
-<h2>🌱 학생·학부모 회원가입</h2>
-<div class="input-group">
-<label>👤 이름</label>
-<input type="text" id="signupName" placeholder="이름을 입력하세요">
-</div>
-<div class="input-group">
-<label>📧 이메일</label>
-<input type="email" id="signupEmail" placeholder="이메일을 입력하세요">
-</div>
-<div class="input-group">
-<label>🔑 비밀번호</label>
-<input type="password" id="signupPassword" placeholder="비밀번호를 입력하세요">
-</div>
-<div class="input-group">
-<label>🎯 구분</label>
-<select id="signupType">
-<option value="student">🎒 학생</option>
-<option value="parent">👨‍👩‍👧 학부모</option>
-</select>
-</div>
-<button class="btn-google" onclick="googleSignup()">
-<span>G</span> 구글 계정으로 가입하기
-</button>
-<div class="modal-buttons">
-<button class="btn-confirm" onclick="signup()">가입하기</button>
-<button class="btn-cancel" onclick="closeModal('signupModal')">취소</button>
-</div>
-</div>
-</div>
-
 <div class="modal" id="addNoticeModal">
 <div class="modal-content">
 <h2>📝 새 공지사항 추가</h2>
@@ -530,23 +481,72 @@ body {
 </div>
 </div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB86EOglqMz1z-EB6CKL21Jxd4H7NPyxe0",
+  authDomain: "my-class-homepage.firebaseapp.com",
+  projectId: "my-class-homepage",
+  storageBucket: "my-class-homepage.firebasestorage.app",
+  messagingSenderId: "675415839633",
+  appId: "1:675415839633:web:87a635d1892e34b8224030",
+  measurementId: "G-2R4ZE98YXB"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+window.signInWithGoogle = async function() {
+    try {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+        alert('🌱 환영합니다, ' + user.displayName + '님!');
+    } catch (error) {
+        alert('로그인에 실패했습니다: ' + error.message);
+    }
+};
+
+window.firebaseLogout = async function() {
+    try {
+        await signOut(auth);
+    } catch (error) {
+        alert('로그아웃에 실패했습니다: ' + error.message);
+    }
+};
+
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        document.getElementById('currentUserName').textContent = user.displayName || user.email;
+        document.getElementById('userWelcome').classList.remove('hidden');
+        document.querySelector('.top-left').style.display = 'none';
+        
+        if (user.email === 'nnabe@school.com' || user.email === 'nnabe715@gmail.com') {
+            document.getElementById('adminSection').classList.remove('hidden');
+        }
+    } else {
+        document.getElementById('userWelcome').classList.add('hidden');
+        document.querySelector('.top-left').style.display = 'flex';
+        document.getElementById('adminSection').classList.add('hidden');
+    }
+});
+</script>
+
+<script>
 const quotes = [
     { text: "작은 것들에 감사하면, 큰 행복이 찾아옵니다.", author: "- 자연의 지혜" },
     { text: "나무는 천천히 자라지만, 튼튼한 뿌리를 내립니다.", author: "- 숲의 교훈" },
     { text: "햇빛과 물만 있으면 씨앗은 반드시 싹을 틔웁니다.", author: "- 자연의 약속" },
-    { text: "가장 높은 나무도 한 알의 씨앗에서 시작됩니다.", author: "- 오래된 속담" },
-    { text: "바람이 불어야 나무는 더 깊이 뿌리를 내립니다.", author: "- 시련의 의미" },
-    { text: "숲은 나무 한 그루로 이루어지지 않습니다.", author: "- 함께의 힘" },
-    { text: "계절이 바뀌듯, 어려운 시간도 지나갑니다.", author: "- 시간의 흐름" },
-    { text: "하루에 한 걸음씩 걸으면 산도 넘을 수 있습니다.", author: "- 꾸준함의 가치" }
+    { text: "가장 높은 나무도 한 알의 씨앗에서 시작됩니다.", author: "- 오래된 속담" }
 ];
 
 const students = ["김민준", "이서준", "박도윤", "최서연", "정지우", "강하준", "조지안", "윤서진", "장민재", "임예준", "한채원", "오다은", "신지호", "배수아", "권은우", "송하윤", "홍시우", "양지윤", "구민서", "노준혁"];
 
 const attendanceStatus = {};
 const adminAccount = { username: 'nnabe', password: '1234', name: '나나베 선생님' };
-let currentUser = null;
 
 function displayRandomQuote() {
     const q = quotes[Math.floor(Math.random() * quotes.length)];
@@ -585,7 +585,7 @@ function toggleAttendance(s, el) {
 }
 
 function openLoginModal() { document.getElementById('loginModal').style.display = 'flex'; }
-function openSignupModal() { document.getElementById('signupModal').style.display = 'flex'; }
+
 function openAddNoticeModal() {
     document.getElementById('addNoticeModal').style.display = 'flex';
     document.getElementById('noticeDate').valueAsDate = new Date();
@@ -593,66 +593,26 @@ function openAddNoticeModal() {
 
 function closeModal(id) {
     document.getElementById(id).style.display = 'none';
-    if (id === 'loginModal') {
-        document.getElementById('adminUsername').value = '';
-        document.getElementById('adminPassword').value = '';
-    } else if (id === 'signupModal') {
-        document.getElementById('signupName').value = '';
-        document.getElementById('signupEmail').value = '';
-        document.getElementById('signupPassword').value = '';
-    } else if (id === 'addNoticeModal') {
-        document.getElementById('noticeTitle').value = '';
-        document.getElementById('noticeContent').value = '';
-    }
 }
 
 function adminLogin() {
     const u = document.getElementById('adminUsername').value;
     const p = document.getElementById('adminPassword').value;
     if (u === adminAccount.username && p === adminAccount.password) {
-        currentUser = { name: adminAccount.name, isAdmin: true };
-        showUserWelcome();
+        document.getElementById('currentUserName').textContent = adminAccount.name;
+        document.getElementById('userWelcome').classList.remove('hidden');
+        document.querySelector('.top-left').style.display = 'none';
+        document.getElementById('adminSection').classList.remove('hidden');
         closeModal('loginModal');
-        alert('선생님 로그인 성공! 환영합니다!');
+        alert('선생님 로그인 성공!');
     } else {
         alert('아이디 또는 비밀번호가 올바르지 않습니다!');
     }
 }
 
-function signup() {
-    const n = document.getElementById('signupName').value;
-    const e = document.getElementById('signupEmail').value;
-    const p = document.getElementById('signupPassword').value;
-    const t = document.getElementById('signupType').value;
-    if (!n || !e || !p) {
-        alert('모든 정보를 입력해주세요!');
-        return;
-    }
-    currentUser = { name: n, isAdmin: false };
-    showUserWelcome();
-    closeModal('signupModal');
-    alert('회원가입이 완료되었습니다! 환영합니다!');
-}
-
-function googleSignup() {
-    currentUser = { name: '구글 사용자', isAdmin: false };
-    showUserWelcome();
-    closeModal('signupModal');
-    alert('구글 계정으로 가입 완료! 환영합니다!');
-}
-
-function showUserWelcome() {
-    document.getElementById('currentUserName').textContent = currentUser.name;
-    document.getElementById('userWelcome').classList.remove('hidden');
-    document.querySelector('.top-left').style.display = 'none';
-    if (currentUser.isAdmin) {
-        document.getElementById('adminSection').classList.remove('hidden');
-    }
-}
-
 function logout() {
     if (confirm('로그아웃 하시겠습니까?')) {
-        currentUser = null;
+        if (window.firebaseLogout) window.firebaseLogout();
         document.getElementById('userWelcome').classList.add('hidden');
         document.querySelector('.top-left').style.display = 'flex';
         document.getElementById('adminSection').classList.add('hidden');
@@ -677,8 +637,16 @@ function addNotice() {
     alert('공지사항이 추가되었습니다!');
 }
 
-document.getElementById('adminPassword').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') adminLogin();
-});
+window.onclick = function(e) {
+    if (e.target.classList.contains('modal')) {
+        e.target.style.display = 'none';
+    }
+}
 
-window.
+window.onload = function() {
+    displayRandomQuote();
+    initAttendance();
+}
+</script>
+</body>
+</html>
